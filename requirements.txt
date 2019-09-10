@@ -1,9 +1,0 @@
-numpy
-scipy
-itertools
-cProfile
-altair==2.3.0
-vega==1.4.0
-pandas
-statsmodels
-hashlib
