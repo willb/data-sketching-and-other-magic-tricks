@@ -52,7 +52,7 @@ def as_bytes(obj):
 
 murmurize = np.frompyfunc(lambda seed, bytes: mhash(bytes, seed), 2, 1)
 
-class FasterMinhash(object):
+class SimpleMinhash(object):
     """ This is a slightly less-basic implementation of minhash """
     def __init__(self, hashes):
         rng = np.random.RandomState(seed=int.from_bytes(b"rad!", "big"))
@@ -71,13 +71,13 @@ class FasterMinhash(object):
     def merge(self, other):
         """ returns a newly-allocated minhash structure containing
             the merge of this hash and another """
-        result = FasterMinhash(0)
+        result = SimpleMinhash(0)
         result.buckets = np.minimum(self.buckets, other.buckets)
-        result.hashes = self.hashes
+        result.seeds = self.seeds
         return result
 
 
-class SimpleMinhash(object):
+class SlowerMinhash(object):
     """ This is a very basic implementation of minhash """
     def __init__(self, hashes):
         rng = np.random.RandomState(seed=int.from_bytes(b"rad!", "big"))
@@ -94,7 +94,7 @@ class SimpleMinhash(object):
     def merge(self, other):
         """ returns a newly-allocated minhash structure containing
             the merge of this hash and another """
-        result = SimpleMinhash(0)
+        result = SlowerMinhash(0)
         result.buckets = np.minimum(self.buckets, other.buckets)
         result.hashes = self.hashes
         return result
@@ -120,7 +120,9 @@ class LSHMinhash(object):
     def merge(self, other):
         """ returns a newly-allocated minhash structure containing
             the merge of this hash and another """
-        result = SimpleMinhash(0)
+        
+        # FIXME:  this seems wrong
+        result = SlowerMinhash(0)
         result.buckets = numpy.minimum(self.buckets, other.buckets)
         result.hashes = self.hashes
         return result
