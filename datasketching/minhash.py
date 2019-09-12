@@ -50,18 +50,18 @@ def as_bytes(obj):
 
     return pickle.dumps(obj)
 
-murmurize = np.frompyfunc(lambda bytes, seed: mhash(bytes, seed), 2, 1)
+murmurize = np.frompyfunc(lambda seed, bytes: mhash(bytes, seed), 2, 1)
 
 class FasterMinhash(object):
     """ This is a slightly less-basic implementation of minhash """
     def __init__(self, hashes):
         rng = np.random.RandomState(seed=int.from_bytes(b"rad!", "big"))
         self.buckets = np.full(hashes, (1 << 32) - 1)
-        self.seeds = np.array([seed for seed in rng.randint(0, (1 << 32) - 1, hashes)])
+        self.seeds = rng.randint(0, (1 << 32) - 1, hashes)
 
 
     def add(self, obj):
-        hashes = murmurize(np.full(len(self.seeds), as_bytes(obj)), self.seeds)
+        hashes = murmurize(self.seeds, as_bytes(obj))
         np.minimum(self.buckets, hashes.astype("int"), self.buckets)
 
     def similarity(self, other):
@@ -71,7 +71,7 @@ class FasterMinhash(object):
     def merge(self, other):
         """ returns a newly-allocated minhash structure containing
             the merge of this hash and another """
-        result = SimpleMinhash(0)
+        result = FasterMinhash(0)
         result.buckets = np.minimum(self.buckets, other.buckets)
         result.hashes = self.hashes
         return result
