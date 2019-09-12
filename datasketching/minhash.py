@@ -108,10 +108,11 @@ class LSHMinhash(object):
         self.rows = rows
         self.bands = bands
         self.buckets = np.full(hashes, (1 << 32) - 1)
-        self.hashes = [murmurmaker(seed) for seed in rng.randint(0, (1<<32) - 1, hashes)]
+        self.seeds = rng.randint(0, (1 << 32) - 1, hashes)
 
     def add(self, obj):
-        self.buckets = np.minimum(self.buckets, [h(obj) for h in self.hashes])
+        hashes = murmurize(self.seeds, as_bytes(obj))
+        np.minimum(self.buckets, hashes.astype("int"), self.buckets)
 
     def similarity(self, other):
         """  """
@@ -120,11 +121,9 @@ class LSHMinhash(object):
     def merge(self, other):
         """ returns a newly-allocated minhash structure containing
             the merge of this hash and another """
-        
-        # FIXME:  this seems wrong
-        result = SlowerMinhash(0)
-        result.buckets = numpy.minimum(self.buckets, other.buckets)
-        result.hashes = self.hashes
+        result = LSHMinhash(self.rows, self.bands)
+        numpy.minimum(self.buckets, other.buckets, result.buckets)
+        result.seeds = self.seeds
         return result
 
     def lsh_keys(self):
