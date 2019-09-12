@@ -29,9 +29,6 @@ def murmurmaker(seed):
 
 
 
-murmurize = np.frompyfunc(lambda bytes, seed: mhash(bytes, seed), 2, 1)
-
-
 def as_bytes(obj):
     import math
     if type(obj) == str:
@@ -53,7 +50,7 @@ def as_bytes(obj):
 
     return pickle.dumps(obj)
 
-
+murmurize = np.frompyfunc(lambda bytes, seed: mhash(bytes, seed), 2, 1)
 
 class FasterMinhash(object):
     """ This is a slightly less-basic implementation of minhash """
@@ -64,10 +61,8 @@ class FasterMinhash(object):
 
 
     def add(self, obj):
-        output = np.full(len(self.seeds), as_bytes(obj))
-        murmurize(output, self.seeds, out=output)
-
-        np.minimum(self.buckets, output.astype("int"), self.buckets)
+        hashes = murmurize(np.full(len(self.seeds), as_bytes(obj)), self.seeds)
+        np.minimum(self.buckets, hashes.astype("int"), self.buckets)
 
     def similarity(self, other):
         """  """
