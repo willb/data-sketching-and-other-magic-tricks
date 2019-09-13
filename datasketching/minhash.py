@@ -34,23 +34,19 @@ def as_bytes(obj):
     if type(obj) == str:
         return obj.encode("utf-8")
     elif type(obj) == int:
-        if obj < (1 << 16):
-            return obj.to_bytes(16, "big")
-        elif obj < (1 << 32):
-            return obj.to_bytes(32, "big")
-        elif obj < (1 << 64):
-            return obj.to_bytes(64, "big")
-        elif obj < (1 << 128):
-            return obj.to_bytes(128, "big")
+        if obj < (1 << 64):
+            return obj.to_bytes(8, "big")
         else:
-            bcount = 2 ** (int(math.log(obj) / math.log(2)) + 1)
+            bcount = (int(math.log(obj) / math.log(2)) + 1)
             return obj.to_bytes(bcount, "big")
     elif type(obj) == bytes:
         return obj
 
     return pickle.dumps(obj)
 
+
 murmurize = np.frompyfunc(lambda seed, bytes: mhash(bytes, seed), 2, 1)
+
 
 class SimpleMinhash(object):
     """ This is a slightly less-basic implementation of minhash """
@@ -58,7 +54,6 @@ class SimpleMinhash(object):
         rng = np.random.RandomState(seed=int.from_bytes(b"rad!", "big"))
         self.buckets = np.full(hashes, (1 << 32) - 1)
         self.seeds = rng.randint(0, (1 << 32) - 1, hashes)
-
 
     def add(self, obj):
         hashes = murmurize(self.seeds, as_bytes(obj))
@@ -76,9 +71,18 @@ class SimpleMinhash(object):
         result.seeds = self.seeds
         return result
 
+    def merge_in_place(self, other):
+        """ merges other into self, modifying self """
+        np.minimum(self.buckets, other.buckets, self.buckets)
+
+    def dup(self):
+        result = SimpleMinhash(len(self.seeds))
+        np.minumum(result.buckets, self.buckets, result.buckets)
+        return result
+
 
 class SlowerMinhash(object):
-    """ This is a very basic implementation of minhash """
+    """ This is a very basic implementation of minhash for didactic use only """
     def __init__(self, hashes):
         rng = np.random.RandomState(seed=int.from_bytes(b"rad!", "big"))
         self.buckets = np.full(hashes, (1 << 32) - 1)
@@ -99,9 +103,19 @@ class SlowerMinhash(object):
         result.hashes = self.hashes
         return result
 
+    def merge_in_place(self, other):
+        """ merges other into self, modifying self """
+        np.minimum(self.buckets, other.buckets, self.buckets)
+
+    def dup(self):
+        result = SlowerMinhash(len(self.seeds))
+        np.minimum(result.buckets, self.buckets, result.buckets)
+        return result
+
+
 
 class LSHMinhash(object):
-    """ This is a very basic implementation of minhash with locality-sensitive hashing """
+    """ This is a basic implementation of minhash with locality-sensitive hashing """
     def __init__(self, rows, bands):
         rng = np.random.RandomState(seed=int.from_bytes(b"rad!", "big"))
         hashes = rows * bands
@@ -126,5 +140,52 @@ class LSHMinhash(object):
         result.seeds = self.seeds
         return result
 
+    def merge_in_place(self, other):
+        """ merges other into self, modifying self """
+        np.minimum(self.buckets, other.buckets, self.buckets)
+
+    def dup(self):
+        result = LSHMinhash(self.rows, self.bands)
+        np.minimum(result.buckets, self.buckets, result.buckets)
+        return result
+
     def lsh_keys(self):
         return [self.hashes[0]([b for b in band]) for band in self.buckets.copy().reshape((self.rows, self.bands))]
+
+
+def combine_signatures(*others):
+    if len(others) == 0:
+        return SimpleMinhash(0)
+
+    result = others[0].dup()
+
+    for other in others[1:]:
+        result.merge_in_place(other)
+
+    return result
+
+
+class MinhashCache(object):
+    def __init__(self, proto=None):
+        self.d = {}
+        if proto is None:
+            self.prototype = LSHMinhash(32, 8)
+        else:
+            self.prototype = proto
+
+    def __getitem__(self, k):
+        if k in self.d:
+            return self.d[k]
+        else:
+            sm = self.prototype.dup()
+            sm.add(k)
+            self.d[k] = sm
+            return sm
+
+
+def generate_minhashes_for(grouped_df, key_col, value_col, prototype=None):
+    import itertools
+    c = MinhashCache(prototype)
+    df = grouped_df.head(grouped_df.size().max())
+    return [(k, combine_signatures(*[c[a[1]] for a in g])) for k, g in
+    itertools.groupby(zip(df[key_col], df[value_col]), lambda x: x[0])]
