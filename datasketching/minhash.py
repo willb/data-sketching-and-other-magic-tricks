@@ -150,7 +150,7 @@ class LSHMinhash(object):
         return result
 
     def lsh_keys(self):
-        return [self.hashes[0]([b for b in band]) for band in self.buckets.copy().reshape((self.rows, self.bands))]
+        return [mhash(as_bytes(k), seed=self.seeds[0]) for k in self.buckets.reshape((self.rows, self.bands))]
 
 
 def combine_signatures(*others):
