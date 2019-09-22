@@ -1,6 +1,6 @@
 # Data sketching and other magic tricks
 
-This repository contains Jupyter notebooks for an interactive tutorial on hash-based probabilistic data structures.  Here's how to run it:
+[This repository](https://github.com/willb/data-sketching-and-other-magic-tricks) contains Jupyter notebooks for an interactive tutorial on hash-based probabilistic data structures.  Here's how to run it:
 
 ## The easy way
 
@@ -28,11 +28,5 @@ Use [binder](https://mybinder.org/v2/gh/willb/data-sketching-and-other-magic-tri
 2.  Change to this repository's directory:  `cd data-sketching-and-other-magic tricks`
 3.  Install the dependencies:  `pipenv install`
 4.  Run the notebooks:  `pipenv run jupyter notebook`
-
-    
-    
-    
-    
-    
 
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/willb/data-sketching-and-other-magic-tricks/master)
