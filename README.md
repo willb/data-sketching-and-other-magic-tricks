@@ -4,7 +4,7 @@
 
 ## The easy way
 
-Use [binder](https://mybinder.org/v2/gh/willb/data-sketching-and-other-magic-tricks/master).
+Use [binder](https://mybinder.org/v2/gh/willb/data-sketching-and-other-magic-tricks/master).  (We don't recommend this if you'll be running the tutorial over conference wifi, but it requires almost no setup and can run from a computer that only has a browser.)
 
 ## The flexible way
 
